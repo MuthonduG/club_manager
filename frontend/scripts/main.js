@@ -11,6 +11,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 100); // Check every 100ms until button exists
       };
 
+      waitForButton("dashboard__btn", (dashBtn) => {
+  dashBtn.addEventListener("click", () => {
+    const nav = document.getElementById("nav");
+    if (nav) nav.style.display = "none";
+
+    loadComponent("./pages/dashboard.html", "#root", false)
+      .then(() => {
+        // ✅ Dynamically load dashboard.js after dashboard is injected
+        const script = document.createElement("script");
+        script.src = "./scripts/dashboard.js";
+        script.type = "text/javascript";
+        document.body.appendChild(script);
+      });
+  });
+});
+
+
       waitForButton("login__btn", (loginBtn) => {
         loginBtn.addEventListener("click", () => {
           // Load login component and replace #root
@@ -31,6 +48,8 @@ document.addEventListener("DOMContentLoaded", () => {
     .then(() => loadComponent("./components/events.html", "#root", true))
     .then(() => loadComponent("./components/contacts.html", "#root", true))
     .then(() => loadComponent("./components/footer.html", "#root", true))
+    .then(() => loadComponent("./pages/dashboard.html", "#root", true)) 
+
     .catch((err) => console.error("Error loading components:", err));
 });
 
