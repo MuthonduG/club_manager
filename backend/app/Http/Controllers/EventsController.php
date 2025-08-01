@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Events;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class EventsController extends Controller
 {
@@ -12,7 +13,7 @@ class EventsController extends Controller
      */
     public function index()
     {
-        return Events::all();
+        return Events::withCount('attendees')->get(); // Includes RSVP count
     }
 
     /**
@@ -37,7 +38,7 @@ class EventsController extends Controller
      */
     public function show(Events $event)
     {
-        //
+        $event->loadCount('attendees'); // Add RSVP count
         return response()->json($event);
     }
 
@@ -46,7 +47,6 @@ class EventsController extends Controller
      */
     public function update(Request $request, Events $event)
     {
-        //
         $request->validate([
             'title' => 'sometimes|required|string|max:255',
             'body' => 'sometimes|required',
@@ -55,6 +55,7 @@ class EventsController extends Controller
         ]);
 
         $event->update($request->all());
+
         return response()->json($event, 200);
     }
 
@@ -63,8 +64,39 @@ class EventsController extends Controller
      */
     public function destroy(Events $event)
     {
-        //
         $event->delete();
+
         return response()->json(null, 204);
+    }
+
+    /**
+     * RSVP the authenticated user to an event.
+     */
+    public function rsvp(Request $request, $id)
+    {
+        $event = Events::findOrFail($id);
+
+        // Attach the user only if they haven't already RSVP'd
+        $event->attendees()->syncWithoutDetaching([Auth::id()]);
+
+        return response()->json([
+            'message' => 'RSVP successful',
+            'attendee_count' => $event->attendees()->count(),
+        ], 200);
+    }
+
+    /**
+     * Cancel RSVP for an event.
+     */
+    public function cancelRsvp(Request $request, $id)
+    {
+        $event = Events::findOrFail($id);
+
+        $event->attendees()->detach(Auth::id());
+
+        return response()->json([
+            'message' => 'RSVP cancelled',
+            'attendee_count' => $event->attendees()->count(),
+        ], 200);
     }
 }
